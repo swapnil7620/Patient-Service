@@ -2,11 +2,9 @@ package com.swapnil.appointment_service.service;
 
 
 
+import com.swapnil.appointment_service.client.DoctorClient;
 import com.swapnil.appointment_service.client.PatientClient;
-import com.swapnil.appointment_service.dto.AppointmentRequestDTO;
-import com.swapnil.appointment_service.dto.AppointmentResponseDTO;
-import com.swapnil.appointment_service.dto.CompleteAppointmentRequestDTO;
-import com.swapnil.appointment_service.dto.PatientResponseDTO;
+import com.swapnil.appointment_service.dto.*;
 import com.swapnil.appointment_service.entity.Appointment;
 import com.swapnil.appointment_service.entity.enums.AppointmentStatus;
 import com.swapnil.appointment_service.exception.ApiResponse;
@@ -25,14 +23,30 @@ import java.util.List;
 public class AppointmentServiceImpl implements AppointmentService {
 
     private final PatientClient patientClient;
+    private final DoctorClient doctorClient;
 
     private final AppointmentRepository appointmentRepository;
-    @Override
-    public AppointmentResponseDTO createAppointment(
-            AppointmentRequestDTO requestDTO) {
+
+    private PatientResponseDTO validatePatient(Long patientId) {
+
+        ApiResponse<PatientResponseDTO> response =
+                patientClient.getPatientById(patientId);
+
+        return response.getData();
+    }
+
+
+    private DoctorResponseDTO validateDoctor(Long doctorId) {
+
+        ApiResponse<DoctorResponseDTO> response =
+                doctorClient.getDoctorById(doctorId);
+
+        return response.getData();
+    }
+
+    private void validateAppointment(AppointmentRequestDTO requestDTO) {
 
         // Check whether the doctor already has an appointment
-        // at the requested date and time.
         if (appointmentRepository.existsByDoctorIdAndAppointmentDateAndAppointmentTime(
                 requestDTO.getDoctorId(),
                 requestDTO.getAppointmentDate(),
@@ -42,7 +56,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                     "Doctor already has an appointment at the selected date and time.");
         }
 
-        // Prevent duplicate booking by the same patient.
+        // Prevent duplicate booking by the same patient
         if (appointmentRepository.existsByPatientIdAndDoctorIdAndAppointmentDateAndAppointmentTime(
                 requestDTO.getPatientId(),
                 requestDTO.getDoctorId(),
@@ -52,18 +66,31 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new InvalidAppointmentException(
                     "You have already booked this appointment.");
         }
+    }
 
-        ApiResponse<PatientResponseDTO> response =
-                patientClient.getPatientById(requestDTO.getPatientId());
 
-        PatientResponseDTO patient = response.getData();
-        System.out.println(patient);
+    @Override
+    public AppointmentResponseDTO createAppointment(AppointmentRequestDTO requestDTO) {
 
+        // Validate appointment business rules
+        validateAppointment(requestDTO);
+
+        // Validate patient exists
+        validatePatient(requestDTO.getPatientId());
+
+        // Validate doctor exists
+        validateDoctor(requestDTO.getDoctorId());
+
+        // Convert DTO to Entity
         Appointment appointment = AppointmentMapper.toEntity(requestDTO);
-        appointment.setStatus(AppointmentStatus.BOOKED);
-        Appointment savedAppointment =
-                appointmentRepository.save(appointment);
 
+        // Set default status
+        appointment.setStatus(AppointmentStatus.BOOKED);
+
+        // Save appointment
+        Appointment savedAppointment = appointmentRepository.save(appointment);
+
+        // Convert Entity to Response DTO
         return AppointmentMapper.toResponseDTO(savedAppointment);
     }
 

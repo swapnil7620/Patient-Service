@@ -3,6 +3,8 @@ package com.swapnil.appointment_service.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.swapnil.appointment_service.exception.ResourceNotFoundException;
+import com.swapnil.appointment_service.exception.ServiceUnavailableException;
 import feign.Response;
 import feign.codec.ErrorDecoder;
 
@@ -34,14 +36,13 @@ public class FeignErrorDecoder implements ErrorDecoder {
             switch (response.status()) {
 
                 case 404:
-                    return new RuntimeException(message);
+                    return new ResourceNotFoundException(message);
 
                 case 503:
-                    return new RuntimeException(message);
+                    return new ServiceUnavailableException(message);
 
                 default:
-                    return new RuntimeException(message);
-
+                    return defaultErrorDecoder.decode(methodKey, response);
             }
 
         } catch (IOException e) {
