@@ -2,11 +2,14 @@ package com.swapnil.appointment_service.service;
 
 
 
+import com.swapnil.appointment_service.client.PatientClient;
 import com.swapnil.appointment_service.dto.AppointmentRequestDTO;
 import com.swapnil.appointment_service.dto.AppointmentResponseDTO;
 import com.swapnil.appointment_service.dto.CompleteAppointmentRequestDTO;
+import com.swapnil.appointment_service.dto.PatientResponseDTO;
 import com.swapnil.appointment_service.entity.Appointment;
 import com.swapnil.appointment_service.entity.enums.AppointmentStatus;
+import com.swapnil.appointment_service.exception.ApiResponse;
 import com.swapnil.appointment_service.exception.AppointmentNotFoundException;
 import com.swapnil.appointment_service.exception.InvalidAppointmentException;
 import com.swapnil.appointment_service.mapper.AppointmentMapper;
@@ -20,6 +23,8 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class AppointmentServiceImpl implements AppointmentService {
+
+    private final PatientClient patientClient;
 
     private final AppointmentRepository appointmentRepository;
     @Override
@@ -47,6 +52,12 @@ public class AppointmentServiceImpl implements AppointmentService {
             throw new InvalidAppointmentException(
                     "You have already booked this appointment.");
         }
+
+        ApiResponse<PatientResponseDTO> response =
+                patientClient.getPatientById(requestDTO.getPatientId());
+
+        PatientResponseDTO patient = response.getData();
+        System.out.println(patient);
 
         Appointment appointment = AppointmentMapper.toEntity(requestDTO);
         appointment.setStatus(AppointmentStatus.BOOKED);

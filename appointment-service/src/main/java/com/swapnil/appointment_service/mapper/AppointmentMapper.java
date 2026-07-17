@@ -2,12 +2,15 @@ package com.swapnil.appointment_service.mapper;
 
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.swapnil.appointment_service.dto.AppointmentRequestDTO;
 import com.swapnil.appointment_service.dto.AppointmentResponseDTO;
 import com.swapnil.appointment_service.entity.Appointment;
 import com.swapnil.appointment_service.entity.enums.AppointmentStatus;
 
 public final class AppointmentMapper {
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     private AppointmentMapper() {
         // Prevent instantiation
